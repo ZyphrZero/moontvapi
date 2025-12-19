@@ -5,18 +5,33 @@ on:
     - cron: '0 */6 * * *'  # 每 6 小时执行一次
   workflow_dispatch:  # 支持手动触发
 
+permissions:
+  contents: write  # 明确授予写入权限
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          ref: config  # 直接操作 config 分支
+
       - name: 拉取配置
         run: |
           curl -o config.txt "https://odd-hall-95d8.1430066373.workers.dev/?config=1&encode=base58"
-          
-      - name: 提交到仓库
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          publish_branch: config
-          keep_files: false
+          echo "配置文件大小: $(wc -c < config.txt) bytes"
+
+      - name: 提交更新
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 检查是否有变更
+          if ! git diff --quiet config.txt 2>/dev/null || [ ! -f config.txt ]; then
+            git add config.txt
+            git commit -m "🔄 自动同步配置 - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "没有变更需要提交"
+            git push origin config
+          else
+            echo "配置文件没有变化，跳过提交"
+          fi
