@@ -1,0 +1,22 @@
+name: 同步影视源配置
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # 每 6 小时执行一次
+  workflow_dispatch:  # 支持手动触发
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取配置
+        run: |
+          curl -o config.txt "https://odd-hall-95d8.1430066373.workers.dev/?config=1&encode=base58"
+          
+      - name: 提交到仓库
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: config
+          keep_files: false
