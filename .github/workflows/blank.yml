@@ -15,12 +15,13 @@ jobs:
       - name: 检出仓库
         uses: actions/checkout@v4
         with:
-          ref: config  # 直接操作 config 分支
+          ref: main  # 直接操作 main 主分支
 
       - name: 拉取配置
         run: |
           curl -o config.txt "https://odd-hall-95d8.1430066373.workers.dev/?config=1&encode=base58"
-          echo "配置文件大小: $(wc -c < config.txt) bytes"
+          echo "✅ 配置文件下载完成"
+          echo "📦 文件大小: $(wc -c < config.txt) bytes"
 
       - name: 提交更新
         run: |
@@ -31,7 +32,8 @@ jobs:
           if ! git diff --quiet config.txt 2>/dev/null || [ ! -f config.txt ]; then
             git add config.txt
             git commit -m "🔄 自动同步配置 - $(date -u +'%Y-%m-%d %H:%M:%S UTC')" || echo "没有变更需要提交"
-            git push origin config
+            git push origin main
+            echo "✅ 配置已同步到 main 分支"
           else
-            echo "配置文件没有变化，跳过提交"
+            echo "ℹ️ 配置文件没有变化，跳过提交"
           fi
