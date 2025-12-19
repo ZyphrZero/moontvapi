@@ -1,0 +1,49 @@
+name: 同步影视源配置
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # 每 6 小时执行一次
+  workflow_dispatch:  # 支持手动触发
+
+permissions:
+  contents: write  # 明确授予写入权限
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: 拉取配置
+        run: |
+          echo "📥 开始下载配置文件..."
+          curl -f -o config.txt "https://odd-hall-95d8.1430066373.workers.dev/?config=1&encode=base58"
+          if [ $? -eq 0 ]; then
+            echo "✅ 配置文件下载成功"
+            echo "📦 文件大小: $(wc -c < config.txt) bytes"
+            ls -lh config.txt
+          else
+            echo "❌ 配置文件下载失败"
+            exit 1
+          fi
+
+      - name: 提交更新
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          # 添加文件
+          git add config.txt
+
+          # 检查是否有变更（使用 git status）
+          if git diff --staged --quiet; then
+            echo "ℹ️ 配置文件没有变化，跳过提交"
+          else
+            echo "📝 检测到配置变更，准备提交..."
+            git commit -m "🔄 自动同步配置 - $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+            git push origin main
+            echo "✅ 配置已同步到 main 分支"
+          fi
